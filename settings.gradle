@@ -1,1 +1,1 @@
-include ':permissionsdispatcher', ':permissionsdispatcher-processor', ':permissionsdispatcher-sample'
+include ':library', ':processor', ':sample', ':lint'
