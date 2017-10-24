@@ -9,8 +9,8 @@ android:
   components:
     - tools
     - platform-tools
-    - build-tools-23.0.2
-    - android-23
+    - build-tools-26.0.1
+    - android-26
     - extra-google-google_play_services
     - extra-android-m2repository
     - extra-android-support
@@ -23,14 +23,14 @@ branches:
   except:
     - gh-pages
 
-script: ./gradlew check --stacktrace
+script: ./gradlew clean build generatePomFiles --stacktrace
 
 after_success:
-  - "./deploy_snapshot.sh"
+  - "./scripts/deploy_snapshot.sh"
 
 deploy:
   provider: script
-  script: ./release.sh
+  script: ./scripts/release.sh
   on:
     tags: true
-    repo: hotchemi/PermissionsDispatcher
+    repo: permissions-dispatcher/PermissionsDispatcher

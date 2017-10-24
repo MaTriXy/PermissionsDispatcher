@@ -1,14 +1,12 @@
 apply plugin: 'com.android.library'
 apply plugin: 'com.novoda.bintray-release'
-apply plugin: 'optional-base'
 
 android {
     compileSdkVersion COMPILE_SDK_VERSION
     buildToolsVersion BUILD_TOOLS_VERSION
     defaultConfig {
-        minSdkVersion LIBRARY_MIN_SDK_VERSION
-        targetSdkVersion 23
-        consumerProguardFiles 'proguard-rules.txt'
+        minSdkVersion MIN_SDK_VERSION
+        targetSdkVersion TARGET_SDK_VERSION
     }
 
     compileOptions {
@@ -37,13 +35,13 @@ configurations {
 }
 
 dependencies {
-    compile "com.android.support:support-v4:$SUPPORT_LIBRARY_VERSION"
-    compile "com.android.support:support-v13:$SUPPORT_LIBRARY_VERSION", optional
+    implementation "com.android.support:support-compat:$SUPPORT_LIBRARY_VERSION"
+    implementation "com.android.support:support-v13:$SUPPORT_LIBRARY_VERSION"
 
-    testCompile "junit:junit:$JUNIT_VERSION"
-    testCompile "org.mockito:mockito-core:$MOCKITO_VERSION"
-    testCompile "org.powermock:powermock-api-mockito:$POWERMOCK_VERSION"
-    testCompile "org.powermock:powermock-module-junit4:$POWERMOCK_VERSION"
+    testImplementation "junit:junit:$JUNIT_VERSION"
+    testImplementation "org.mockito:mockito-core:$MOCKITO_VERSION"
+    testImplementation "org.powermock:powermock-api-mockito:$POWERMOCK_VERSION"
+    testImplementation "org.powermock:powermock-module-junit4:$POWERMOCK_VERSION"
 
     lintChecks project(path: ':lint', configuration: 'lintChecks')
 }
@@ -53,7 +51,7 @@ publish {
     groupId = GROUP_ID
     artifactId = ARTIFACT_ID_LIBRARY
     version = VERSION
-    description = DESCRIPTION
+    desc = DESCRIPTION
     website = WEBSITE
     licences = LICENCES
 }
@@ -90,4 +88,6 @@ project.afterEvaluate {
     compileLintTask.dependsOn(copyLintJar)
 }
 
+// Android Library project: Artifactory Plugin adds 1 publication per Build Type
+project.ext.publicationName = "release"
 apply from: rootProject.file('gradle/gradle-artifactory-upload.gradle')

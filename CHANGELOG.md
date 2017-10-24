@@ -1,5 +1,25 @@
 # ChangeLog
 
+- 3.0.1 2017/09/17
+  - Fix: NeedsPermission annotated method with parameter doesn't work in Kotlin [#376](https://github.com/permissions-dispatcher/PermissionsDispatcher/issues/376)
+  - Fix: CallNeedsPermission check incorrectly flags calls to methods of different class [#377](https://github.com/permissions-dispatcher/PermissionsDispatcher/issues/377)
+- 3.0.0 2017/09/16
+  - Add fully [Kotlin support](https://github.com/hotchemi/PermissionsDispatcher/blob/master/doc/kotlin_support.md)!
+  - Allow for Deterministic, Reproducible Builds with sorted inputs [#342](https://github.com/permissions-dispatcher/PermissionsDispatcher/pull/342)
+  - Internal: Migrate Lint Rules to UAST [363](https://github.com/permissions-dispatcher/PermissionsDispatcher/pull/363)
+  - Rename withCheck to withPermissionCheck [#365](https://github.com/permissions-dispatcher/PermissionsDispatcher/pull/365)
+  - Fix CallNeedsPermissionDetector to work correctly [#368](https://github.com/permissions-dispatcher/PermissionsDispatcher/pull/368)
+- 2.4.0 2017/05/01
+  - Fix `SupportV13MissingException` with newer Gradle [#279](https://github.com/hotchemi/PermissionsDispatcher/issues/279).
+    - Now we bundle support v13 library in the library, you don't have to add v13 dependency by yourself.
+      - If you don't need v13 remove it rxpressly. ref: [README](https://github.com/hotchemi/PermissionsDispatcher#download)
+  - Remove a workaround in the case `targetSdkVersion < 23` [#305](https://github.com/hotchemi/PermissionsDispatcher/issues/305).
+    - If you need the workaround please use  older version.
+- 2.3.2 2017/03/10
+  - Update minSdkVersion to API level 9 [#286](https://github.com/hotchemi/PermissionsDispatcher/pull/286).
+  - Add new compile-time check [#284](https://github.com/hotchemi/PermissionsDispatcher/pull/284).
+  - Fix the problem with receiver of startActivityForResult [#280](https://github.com/hotchemi/PermissionsDispatcher/pull/280)
+  - Support nested annotated class [#263](https://github.com/hotchemi/PermissionsDispatcher/pull/263)
 - 2.3.1 2016/12/26
   - Fix a bug related to Xiaomi. [#240](https://github.com/hotchemi/PermissionsDispatcher/issues/240).
   - Address [#244](https://github.com/hotchemi/PermissionsDispatcher/issues/244) just in case.

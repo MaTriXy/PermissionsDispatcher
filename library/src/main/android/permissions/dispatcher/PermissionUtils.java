@@ -1,11 +1,12 @@
 package permissions.dispatcher;
 
 import android.app.Activity;
+import android.app.Fragment;
 import android.content.Context;
-import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Process;
+import android.support.v13.app.FragmentCompat;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.AppOpsManagerCompat;
 import android.support.v4.util.SimpleArrayMap;
@@ -13,7 +14,6 @@ import android.support.v4.util.SimpleArrayMap;
 import static android.support.v4.content.PermissionChecker.checkSelfPermission;
 
 public final class PermissionUtils {
-
     // Map of dangerous permissions introduced in later framework versions.
     // Used to conditionally bypass permission-hold checks on older devices.
     private static final SimpleArrayMap<String, Integer> MIN_SDK_PERMISSIONS;
@@ -29,8 +29,6 @@ public final class PermissionUtils {
         MIN_SDK_PERMISSIONS.put("android.permission.SYSTEM_ALERT_WINDOW", 23);
         MIN_SDK_PERMISSIONS.put("android.permission.WRITE_SETTINGS", 23);
     }
-
-    private static volatile int targetSdkVersion = -1;
 
     private PermissionUtils() {
     }
@@ -95,7 +93,10 @@ public final class PermissionUtils {
      * @see #hasSelfPermissions(Context, String...)
      */
     private static boolean hasSelfPermission(Context context, String permission) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && "Xiaomi".equalsIgnoreCase(Build.MANUFACTURER)) {
+        // Do not replace with Build.VERSION_CODES.M!
+        // The Android version bundled with the annotation processor's unit tests
+        // is ancient, doesn't know that constant, and a more recent dependency doesn't exist.
+        if (Build.VERSION.SDK_INT >= 23 /* Build.VERSION_CODES.M */ && "Xiaomi".equalsIgnoreCase(Build.MANUFACTURER)) {
             return hasSelfPermissionForXiaomi(context, permission);
         }
         try {
@@ -132,20 +133,45 @@ public final class PermissionUtils {
     }
 
     /**
-     * Get target sdk version.
+     * Checks given permissions are needed to show rationale.
      *
-     * @param context context
-     * @return target sdk version
+     * @param fragment    fragment
+     * @param permissions permission list
+     * @return returns true if one of the permission is needed to show rationale.
      */
-    public static int getTargetSdkVersion(Context context) {
-        if (targetSdkVersion != -1) {
-            return targetSdkVersion;
+    public static boolean shouldShowRequestPermissionRationale(android.support.v4.app.Fragment fragment, String... permissions) {
+        for (String permission : permissions) {
+            if (fragment.shouldShowRequestPermissionRationale(permission)) {
+                return true;
+            }
         }
-        try {
-            PackageInfo packageInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
-            targetSdkVersion = packageInfo.applicationInfo.targetSdkVersion;
-        } catch (PackageManager.NameNotFoundException ignored) {
+        return false;
+    }
+
+    /**
+     * Checks given permissions are needed to show rationale.
+     *
+     * @param fragment    fragment
+     * @param permissions permission list
+     * @return returns true if one of the permission is needed to show rationale.
+     */
+    public static boolean shouldShowRequestPermissionRationale(Fragment fragment, String... permissions) {
+        for (String permission : permissions) {
+            if (FragmentCompat.shouldShowRequestPermissionRationale(fragment, permission)) {
+                return true;
+            }
         }
-        return targetSdkVersion;
+        return false;
+    }
+
+    /**
+     * Requests the provided permissions for a Fragment instance.
+     *
+     * @param fragment    fragment
+     * @param permissions permissions list
+     * @param requestCode Request code connected to the permission request
+     */
+    public static void requestPermissions(Fragment fragment, String[] permissions, int requestCode) {
+        FragmentCompat.requestPermissions(fragment, permissions, requestCode);
     }
 }

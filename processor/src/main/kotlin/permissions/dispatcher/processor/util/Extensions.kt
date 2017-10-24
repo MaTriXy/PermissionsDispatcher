@@ -1,5 +1,6 @@
 package permissions.dispatcher.processor.util
 
+import com.squareup.kotlinpoet.*
 import permissions.dispatcher.NeedsPermission
 import permissions.dispatcher.OnNeverAskAgain
 import permissions.dispatcher.OnPermissionDenied
@@ -24,10 +25,17 @@ private fun Element?.packageName(): String {
     }
 }
 
+// to address kotlin internal method try to remove `$module_name_build_variant` from element info.
+// ex: showCamera$sample_kotlin_debug → showCamera
+internal fun String.trimDollarIfNeeded(): String {
+    val index = indexOf("$")
+    return if (index == -1) this else substring(0, index)
+}
+
 /**
  * Returns the simple name of an Element as a string.
  */
-fun Element.simpleString(): String = this.simpleName.toString()
+fun Element.simpleString() = this.simpleName.toString().trimDollarIfNeeded()
 
 /**
  * Returns the simple name of a TypeMirror as a string.
@@ -71,3 +79,25 @@ fun <A : Annotation> Element.childElementsAnnotatedWith(annotationClass: Class<A
  * Returns whether or not a TypeMirror is a subtype of the provided other TypeMirror.
  */
 fun TypeMirror.isSubtypeOf(ofType: TypeMirror): Boolean = TYPE_UTILS.isSubtype(this, ofType)
+
+fun FileSpec.Builder.addProperties(properties: List<PropertySpec>): FileSpec.Builder {
+    properties.forEach { addProperty(it) }
+    return this
+}
+
+fun FileSpec.Builder.addFunctions(functions: List<FunSpec>): FileSpec.Builder {
+    functions.forEach { addFunction(it) }
+    return this
+}
+
+fun FileSpec.Builder.addTypes(types: List<TypeSpec>): FileSpec.Builder {
+    types.forEach { addType(it) }
+    return this
+}
+
+/**
+ * To avoid KotlinPoet bug that returns java.lang.String when type name is kotlin.String.
+ * This method should be removed after addressing on KotlinPoet side.
+ */
+fun TypeName.checkStringType() =
+        if (this.toString() == "java.lang.String") ClassName("kotlin", "String") else this

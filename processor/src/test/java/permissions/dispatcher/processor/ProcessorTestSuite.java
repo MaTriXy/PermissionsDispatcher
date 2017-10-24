@@ -6,19 +6,19 @@ import permissions.dispatcher.processor.data.Source;
 
 public class ProcessorTestSuite extends TestSuite {
 
-    @Test public void nativeFragmentNotSupported() {
-        expectRuntimeException("PermissionsDispatcher for annotated class 'MyFragment' can't be generated, because the support-v13 dependency is missing on your project");
-        assertJavaSource(Source.NativeFragmentNotSupported);
-    }
-
     @Test public void noPermissionActivity() {
         expectRuntimeException("Annotated class 'MyActivity' doesn't have any method annotated with '@NeedsPermission'");
         assertJavaSource(Source.NoPermissionActivity);
     }
 
-    @Test public void noPermissionFragment() {
+    @Test public void noPermissionSupportFragment() {
         expectRuntimeException("Annotated class 'MyFragment' doesn't have any method annotated with '@NeedsPermission'");
         assertJavaSource(Source.NoPermissionSupportFragment);
+    }
+
+    @Test public void noPermissionNativeFragment() {
+        expectRuntimeException("Annotated class 'MyFragment' doesn't have any method annotated with '@NeedsPermission'");
+        assertJavaSource(Source.NoPermissionNativeFragment);
     }
 
     @Test public void permissionWithNonVoidReturnType() {
@@ -131,12 +131,30 @@ public class ProcessorTestSuite extends TestSuite {
         assertJavaSource(Source.DuplicatesInListsActivity);
     }
 
+    @Test public void needsPermissionMethodOverload() {
+        expectRuntimeException("'showCamera()' has duplicated '@NeedsPermission' method. The method annotated with '@NeedsPermission' must has the unique name.");
+        assertJavaSource(Source.needsPermissionMethodOverload);
+    }
+
+    @Test public void needsPermissionMethodOverloadFragment() {
+        expectRuntimeException("'showCamera()' has duplicated '@NeedsPermission' method. The method annotated with '@NeedsPermission' must has the unique name.");
+        assertJavaSource(Source.needsPermissionMethodOverloadFragment);
+    }
+
+    @Test public void methodOverloadWithoutNeedsPermission() {
+        assertJavaSource(Source.methodOverloadWithoutNeedsPermission);
+    }
+
     @Test public void onePermissionActivity() {
         assertJavaSource(Source.OnePermissionActivity);
     }
 
-    @Test public void onePermissionFragment() {
+    @Test public void onePermissionSupportFragment() {
         assertJavaSource(Source.OnePermissionSupportFragment);
+    }
+
+    @Test public void onePermissionNativeFragment() {
+        assertJavaSource(Source.OnePermissionNativeFragment);
     }
 
     @Test public void onePermissionWithParametersActivity() {
@@ -322,6 +340,10 @@ public class ProcessorTestSuite extends TestSuite {
 
     @Test public void writeSettingsSupportFragment() {
         assertJavaSource(Source.WriteSettingsSupportFragment);
+    }
+
+    @Test public void writeSettingsNativeFragment() {
+        assertJavaSource(Source.WriteSettingsNativeFragment);
     }
 
     @Test public void writeSettingsActivity() {
