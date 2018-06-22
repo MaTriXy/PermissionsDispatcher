@@ -2,16 +2,19 @@ package permissions.dispatcher.processor.impl.java
 
 import com.squareup.javapoet.MethodSpec
 import permissions.dispatcher.processor.util.*
+import javax.annotation.processing.Messager
 import javax.lang.model.type.TypeMirror
 
-class JavaNativeFragmentProcessorUnit : JavaBaseProcessorUnit() {
+class JavaNativeFragmentProcessorUnit(messager: Messager) : JavaBaseProcessorUnit(messager) {
+
+    override fun isDeprecated(): Boolean = true
 
     override fun getTargetType(): TypeMirror {
         return typeMirrorOf("android.app.Fragment")
     }
 
     override fun getActivityName(targetParam: String): String {
-        return targetParam + ".getActivity()"
+        return "$targetParam.getActivity()"
     }
 
     override fun addShouldShowRequestPermissionRationaleCondition(builder: MethodSpec.Builder, targetParam: String, permissionField: String, isPositiveCondition: Boolean) {

@@ -7,6 +7,7 @@ import permissions.dispatcher.processor.RequestCodeProvider
 import permissions.dispatcher.processor.RuntimePermissionsElement
 import permissions.dispatcher.processor.util.*
 import java.util.*
+import javax.annotation.processing.Messager
 import javax.lang.model.element.ExecutableElement
 
 /**
@@ -14,7 +15,7 @@ import javax.lang.model.element.ExecutableElement
  * <p>
  * This generates the parts of code independent from specific permission method signatures for different target objects.
  */
-abstract class KotlinBaseProcessorUnit : KtProcessorUnit {
+abstract class KotlinBaseProcessorUnit(val messager: Messager) : KtProcessorUnit {
 
     protected val PERMISSION_UTILS = ClassName("permissions.dispatcher", "PermissionUtils")
     private val BUILD = ClassName("android.os", "Build")
@@ -29,11 +30,14 @@ abstract class KotlinBaseProcessorUnit : KtProcessorUnit {
 
     abstract fun addShouldShowRequestPermissionRationaleCondition(builder: FunSpec.Builder, permissionField: String, isPositiveCondition: Boolean = true)
 
-    abstract fun getActivityName(): String
+    abstract fun getActivityName(targetParam: String = "this"): String
+
+    abstract fun isDeprecated(): Boolean
 
     override fun createFile(rpe: RuntimePermissionsElement, requestCodeProvider: RequestCodeProvider): FileSpec {
         return FileSpec.builder(rpe.packageName, rpe.generatedClassName)
                 .addComment(FILE_COMMENT)
+                .addAnnotation(createJvmNameAnnotation(rpe.generatedClassName))
                 .addProperties(createProperties(rpe.needsElements, requestCodeProvider))
                 .addFunctions(createWithPermissionCheckFuns(rpe))
                 .addFunctions(createPermissionHandlingFuns(rpe))
@@ -42,6 +46,18 @@ abstract class KotlinBaseProcessorUnit : KtProcessorUnit {
     }
 
     /* Begin private */
+    private fun createJvmNameAnnotation(generatedClassName: String): AnnotationSpec {
+        return AnnotationSpec.builder(ClassName("", "JvmName"))
+                .addMember("%S", generatedClassName)
+                .build()
+    }
+
+    private fun createDeprecatedAnnotation(): AnnotationSpec {
+        return AnnotationSpec
+                .builder(Deprecated::class.java)
+                .addMember("%L = %S", "message", DEPRECATED_MESSAGE)
+                .build()
+    }
 
     private fun createProperties(needsElements: List<ExecutableElement>, requestCodeProvider: RequestCodeProvider): List<PropertySpec> {
         val properties: ArrayList<PropertySpec> = arrayListOf()
@@ -98,16 +114,19 @@ abstract class KotlinBaseProcessorUnit : KtProcessorUnit {
                 .receiver(rpe.ktTypeName)
 
         // If the method has parameters, add those as well
-        method.parameters.forEach {
-            builder.addParameter(it.simpleString(), it.asType().asTypeName().checkStringType())
+        method.parameters.forEach { param ->
+            builder.addParameter(param.simpleString(), param.asPreparedType())
         }
 
         // Delegate method body generation to implementing classes
         addWithPermissionCheckBody(builder, method, rpe)
+        if (isDeprecated()) {
+            builder.addAnnotation(createDeprecatedAnnotation())
+        }
         return builder.build()
     }
 
-    fun addWithPermissionCheckBody(builder: FunSpec.Builder, needsMethod: ExecutableElement, rpe: RuntimePermissionsElement) {
+    private fun addWithPermissionCheckBody(builder: FunSpec.Builder, needsMethod: ExecutableElement, rpe: RuntimePermissionsElement) {
         // Create field names for the constants to use
         val requestCodeField = requestCodeFieldName(needsMethod)
         val permissionField = permissionFieldName(needsMethod)
@@ -166,7 +185,7 @@ abstract class KotlinBaseProcessorUnit : KtProcessorUnit {
         }
 
         // Add the branch for "request permission"
-        ADD_WITH_CHECK_BODY_MAP[needsPermissionParameter]?.addRequestPermissionsStatement(builder, activity, requestCodeField)
+        ADD_WITH_CHECK_BODY_MAP[needsPermissionParameter]?.addRequestPermissionsStatement(builder = builder, activityVar = getActivityName(), requestCodeField = requestCodeField)
                 ?: addRequestPermissionsStatement(builder = builder, permissionField = permissionField, requestCodeField = requestCodeField)
         if (onRationale != null) {
             builder.endControlFlow()
@@ -193,6 +212,7 @@ abstract class KotlinBaseProcessorUnit : KtProcessorUnit {
         val grantResultsParam = "grantResults"
         val builder = FunSpec.builder("onActivityResult")
                 .addTypeVariables(rpe.ktTypeVariables)
+                .receiver(rpe.ktTypeName)
                 .addParameter(requestCodeParam, INT)
 
         builder.beginControlFlow("when (%N)", requestCodeParam)
@@ -355,7 +375,7 @@ abstract class KotlinBaseProcessorUnit : KtProcessorUnit {
 
         needsMethod.parameters.forEach {
             builder.addProperty(
-                    PropertySpec.builder(it.simpleString(), it.asType().asTypeName().checkStringType(), KModifier.PRIVATE)
+                    PropertySpec.builder(it.simpleString(), it.asPreparedType(), KModifier.PRIVATE)
                             .initializer(CodeBlock.of(it.simpleString()))
                             .build()
             )
@@ -365,7 +385,7 @@ abstract class KotlinBaseProcessorUnit : KtProcessorUnit {
         val targetParam = "target"
         val constructorSpec = FunSpec.constructorBuilder().addParameter(targetParam, rpe.ktTypeName)
         needsMethod.parameters.forEach {
-            constructorSpec.addParameter(it.simpleString(), it.asType().asTypeName().checkStringType(), KModifier.PRIVATE)
+            constructorSpec.addParameter(it.simpleString(), it.asPreparedType(), KModifier.PRIVATE)
         }
         builder.primaryConstructor(constructorSpec.build())
 
@@ -374,7 +394,7 @@ abstract class KotlinBaseProcessorUnit : KtProcessorUnit {
                 .addModifiers(KModifier.OVERRIDE)
                 .addStatement("val target = %N.get() ?: return", propName)
         val requestCodeField = requestCodeFieldName(needsMethod)
-        ADD_WITH_CHECK_BODY_MAP[needsMethod.getAnnotation(NeedsPermission::class.java).value[0]]?.addRequestPermissionsStatement(proceedFun, targetParam, requestCodeField)
+        ADD_WITH_CHECK_BODY_MAP[needsMethod.getAnnotation(NeedsPermission::class.java).value[0]]?.addRequestPermissionsStatement(proceedFun, targetParam, getActivityName(targetParam), requestCodeField)
                 ?: addRequestPermissionsStatement(proceedFun, targetParam, permissionFieldName(needsMethod), requestCodeField)
         builder.addFunction(proceedFun.build())
 

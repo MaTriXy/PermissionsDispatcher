@@ -9,9 +9,8 @@ import android.os.Process;
 import android.support.v13.app.FragmentCompat;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.AppOpsManagerCompat;
+import android.support.v4.content.PermissionChecker;
 import android.support.v4.util.SimpleArrayMap;
-
-import static android.support.v4.content.PermissionChecker.checkSelfPermission;
 
 public final class PermissionUtils {
     // Map of dangerous permissions introduced in later framework versions.
@@ -93,14 +92,11 @@ public final class PermissionUtils {
      * @see #hasSelfPermissions(Context, String...)
      */
     private static boolean hasSelfPermission(Context context, String permission) {
-        // Do not replace with Build.VERSION_CODES.M!
-        // The Android version bundled with the annotation processor's unit tests
-        // is ancient, doesn't know that constant, and a more recent dependency doesn't exist.
-        if (Build.VERSION.SDK_INT >= 23 /* Build.VERSION_CODES.M */ && "Xiaomi".equalsIgnoreCase(Build.MANUFACTURER)) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && "Xiaomi".equalsIgnoreCase(Build.MANUFACTURER)) {
             return hasSelfPermissionForXiaomi(context, permission);
         }
         try {
-            return checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED;
+            return PermissionChecker.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED;
         } catch (RuntimeException t) {
             return false;
         }
@@ -113,7 +109,7 @@ public final class PermissionUtils {
             return true;
         }
         int noteOp = AppOpsManagerCompat.noteOp(context, permissionToOp, Process.myUid(), context.getPackageName());
-        return noteOp == AppOpsManagerCompat.MODE_ALLOWED && checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED;
+        return noteOp == AppOpsManagerCompat.MODE_ALLOWED && PermissionChecker.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED;
     }
 
     /**
@@ -155,6 +151,7 @@ public final class PermissionUtils {
      * @param permissions permission list
      * @return returns true if one of the permission is needed to show rationale.
      */
+    @Deprecated
     public static boolean shouldShowRequestPermissionRationale(Fragment fragment, String... permissions) {
         for (String permission : permissions) {
             if (FragmentCompat.shouldShowRequestPermissionRationale(fragment, permission)) {
@@ -171,6 +168,7 @@ public final class PermissionUtils {
      * @param permissions permissions list
      * @param requestCode Request code connected to the permission request
      */
+    @Deprecated
     public static void requestPermissions(Fragment fragment, String[] permissions, int requestCode) {
         FragmentCompat.requestPermissions(fragment, permissions, requestCode);
     }

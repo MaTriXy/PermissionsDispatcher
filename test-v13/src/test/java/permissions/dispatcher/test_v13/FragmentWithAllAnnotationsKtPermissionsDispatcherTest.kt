@@ -6,12 +6,10 @@ import android.support.v13.app.FragmentCompat
 import android.support.v4.app.AppOpsManagerCompat
 import android.support.v4.content.PermissionChecker
 import android.support.v7.app.AppCompatActivity
-import org.junit.Before
-import org.junit.BeforeClass
-import org.junit.Rule
-import org.junit.Test
+import org.junit.*
 import org.junit.runner.RunWith
 import org.mockito.Matchers.any
+import org.mockito.Matchers.anyString
 import org.mockito.Mockito
 import org.powermock.api.mockito.PowerMockito
 import org.powermock.core.classloader.annotations.PowerMockIgnore
@@ -54,6 +52,12 @@ class FragmentWithAllAnnotationsKtPermissionsDispatcherTest {
         PowerMockito.mockStatic(AppOpsManagerCompat::class.java)
     }
 
+    @After
+    fun tearDown() {
+        clearCustomManufacture()
+        clearCustomSdkInt()
+    }
+
     @Test
     fun `already granted call the method`() {
         mockCheckSelfPermission(true)
@@ -91,6 +95,16 @@ class FragmentWithAllAnnotationsKtPermissionsDispatcherTest {
         fragment.showCameraWithPermissionCheck()
 
         Mockito.verify(fragment, Mockito.times(0)).showRationaleForCamera(any(PermissionRequest::class.java))
+    }
+
+    @Test
+    fun `a method with nullable parameters is properly generated`() {
+        mockCheckSelfPermission(true)
+
+        fragment.accessLocationWithPermissionCheck("something")
+        fragment.accessLocationWithPermissionCheck(null)
+
+        Mockito.verify(fragment, Mockito.times(2)).accessLocation(anyString())
     }
 
     @Test
