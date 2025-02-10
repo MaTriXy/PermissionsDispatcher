@@ -3,11 +3,9 @@ package permissions.dispatcher.test
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
-import android.os.Process
 import android.provider.Settings
-import android.support.v4.app.ActivityCompat
-import android.support.v4.app.AppOpsManagerCompat
-import android.support.v4.content.PermissionChecker
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import org.junit.After
 import org.junit.Before
 import org.junit.BeforeClass
@@ -21,8 +19,7 @@ import org.powermock.modules.junit4.PowerMockRunner
 
 @Suppress("IllegalIdentifier")
 @RunWith(PowerMockRunner::class)
-@PrepareForTest(ActivityCompat::class, PermissionChecker::class,
-        AppOpsManagerCompat::class, Process::class, Settings::class, Build.VERSION::class, Uri::class)
+@PrepareForTest(ActivityCompat::class, ContextCompat::class, Settings::class, Build.VERSION::class, Uri::class)
 class ActivityWithSystemAlertWindowKtTest {
     private lateinit var activity: ActivityWithSystemAlertWindowKt
 
@@ -32,8 +29,7 @@ class ActivityWithSystemAlertWindowKtTest {
         @BeforeClass
         @JvmStatic
         fun setUpForClass() {
-            // TODO Reflection on Kotlin top-level properties?
-            requestCode = 8
+            requestCode = ActivityWithSystemAlertWindowKt::systemAlertWindowWithPermissionCheck.packageLevelGetPropertyValueByName("REQUEST_SYSTEMALERTWINDOW") as Int
         }
     }
 
@@ -41,9 +37,7 @@ class ActivityWithSystemAlertWindowKtTest {
     fun setUp() {
         activity = Mockito.mock(ActivityWithSystemAlertWindowKt::class.java)
         PowerMockito.mockStatic(ActivityCompat::class.java)
-        PowerMockito.mockStatic(PermissionChecker::class.java)
-        PowerMockito.mockStatic(Process::class.java)
-        PowerMockito.mockStatic(AppOpsManagerCompat::class.java)
+        PowerMockito.mockStatic(ContextCompat::class.java)
         PowerMockito.mockStatic(Settings::class.java)
         PowerMockito.mockStatic(Uri::class.java)
 
@@ -53,7 +47,6 @@ class ActivityWithSystemAlertWindowKtTest {
 
     @After
     fun tearDown() {
-        clearCustomManufacture()
         clearCustomSdkInt()
     }
 
@@ -122,5 +115,4 @@ class ActivityWithSystemAlertWindowKtTest {
 
         Mockito.verify(activity, Mockito.times(0)).systemAlertWindow()
     }
-
 }

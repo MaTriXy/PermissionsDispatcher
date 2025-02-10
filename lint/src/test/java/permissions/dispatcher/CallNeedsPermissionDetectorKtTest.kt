@@ -1,23 +1,24 @@
 package permissions.dispatcher
 
-import org.intellij.lang.annotations.Language
-import org.junit.Test
-
 import com.android.tools.lint.checks.infrastructure.TestFiles.java
 import com.android.tools.lint.checks.infrastructure.TestFiles.kt
 import com.android.tools.lint.checks.infrastructure.TestLintTask.lint
+import org.intellij.lang.annotations.Language
+import org.junit.Test
 import permissions.dispatcher.Utils.onNeedsPermission
+import permissions.dispatcher.Utils.runtimePermission
 
 class CallNeedsPermissionDetectorKtTest {
 
     @Test
-    @Throws(Exception::class)
     fun callNeedsPermissionMethod() {
         @Language("kotlin") val foo = """
                 package com.example
 
                 import permissions.dispatcher.NeedsPermission
+                import permissions.dispatcher.RuntimePermissions
 
+                @RuntimePermissions
                 class Foo {
                     @NeedsPermission("Test")
                     fun fooBar() {
@@ -30,7 +31,7 @@ class CallNeedsPermissionDetectorKtTest {
                 """.trimMargin()
 
         val expectedText = """
-            |src/com/example/Foo.kt:11: Error: Trying to access permission-protected method directly [CallNeedsPermission]
+            |src/com/example/Foo.kt:13: Error: Trying to access permission-protected method directly [CallNeedsPermission]
             |                        fooBar()
             |                        ~~~~~~~~
             |1 errors, 0 warnings
@@ -38,6 +39,7 @@ class CallNeedsPermissionDetectorKtTest {
 
         lint()
                 .files(
+                        java(runtimePermission),
                         java(onNeedsPermission),
                         kt(foo))
                 .issues(CallNeedsPermissionDetector.ISSUE)
@@ -48,7 +50,6 @@ class CallNeedsPermissionDetectorKtTest {
     }
 
     @Test
-    @Throws(Exception::class)
     fun callNeedsPermissionMethodNoError() {
         @Language("kotlin") val foo = """
                 package com.example
@@ -65,7 +66,9 @@ class CallNeedsPermissionDetectorKtTest {
                 package com.example
 
                 import permissions.dispatcher.NeedsPermission
+                import permissions.dispatcher.RuntimePermissions
 
+                @RuntimePermissions
                 class Baz {
                     @NeedsPermission("Test")
                     fun fooBar() {
@@ -78,9 +81,83 @@ class CallNeedsPermissionDetectorKtTest {
 
         lint()
                 .files(
+                        java(runtimePermission),
                         java(onNeedsPermission),
                         kt(foo),
                         kt(baz))
+                .issues(CallNeedsPermissionDetector.ISSUE)
+                .run()
+                .expectClean()
+    }
+
+    @Test
+    fun issues502() {
+        @Language("kotlin") val foo = """
+            package com.example
+
+            import permissions.dispatcher.NeedsPermission
+            import permissions.dispatcher.RuntimePermissions
+
+            @RuntimePermissions
+            class Foo: AppCompatActivity  {
+                @NeedsPermission(Manifest.permission.READ_SMS)
+                fun requestOTP() {
+                    PhoneVerificationInputFragment().requestOTP()
+                }
+            }
+
+            class FooFragment: Fragment {
+                fun resendOTP() {
+                    requestOTP()
+                }
+                private fun requestOTP() {
+                }
+            }
+        """.trimMargin()
+
+        lint()
+                .files(
+                        java(runtimePermission),
+                        java(onNeedsPermission),
+                        kt(foo))
+                .issues(CallNeedsPermissionDetector.ISSUE)
+                .run()
+                .expectClean()
+    }
+
+    @Test
+    fun `same name methods in different class(issue602)`() {
+        @Language("kotlin") val foo = """
+            package com.example
+
+            import permissions.dispatcher.NeedsPermission
+            import permissions.dispatcher.RuntimePermissions
+
+            @RuntimePermissions
+            class FirstActivity : AppCompatActivity() {
+                @NeedsPermission(Manifest.permission.CAMERA)
+                fun someFun() {
+                }
+            }
+
+            @RuntimePermissions
+            class SecondActivity : AppCompatActivity() {
+                override fun onCreate(savedInstanceState: Bundle?) {
+                    super.onCreate(savedInstanceState)
+                    someFun()
+                }
+
+                fun someFun() {
+                }
+
+                @NeedsPermission(Manifest.permission.CAMERA)
+                fun otherFun() {
+                }
+            }
+        """.trimMargin()
+
+        lint()
+                .files(java(runtimePermission), java(onNeedsPermission), kt(foo))
                 .issues(CallNeedsPermissionDetector.ISSUE)
                 .run()
                 .expectClean()

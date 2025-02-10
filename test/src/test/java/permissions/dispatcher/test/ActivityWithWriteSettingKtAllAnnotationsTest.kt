@@ -3,11 +3,9 @@ package permissions.dispatcher.test
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
-import android.os.Process
 import android.provider.Settings
-import android.support.v4.app.ActivityCompat
-import android.support.v4.app.AppOpsManagerCompat
-import android.support.v4.content.PermissionChecker
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import org.junit.After
 import org.junit.Before
 import org.junit.BeforeClass
@@ -22,8 +20,7 @@ import permissions.dispatcher.PermissionRequest
 
 @Suppress("IllegalIdentifier")
 @RunWith(PowerMockRunner::class)
-@PrepareForTest(ActivityCompat::class, PermissionChecker::class,
-        AppOpsManagerCompat::class, Process::class, Settings.System::class, Build.VERSION::class, Uri::class)
+@PrepareForTest(ActivityCompat::class, ContextCompat::class, Settings.System::class, Build.VERSION::class, Uri::class)
 class ActivityWithWriteSettingKtAllAnnotationsTest {
     
     private lateinit var activity: ActivityWithWriteSettingKtAllAnnotations
@@ -34,8 +31,7 @@ class ActivityWithWriteSettingKtAllAnnotationsTest {
         @BeforeClass
         @JvmStatic
         fun setUpForClass() {
-            // TODO Reflection on Kotlin top-level properties?
-            requestCode = 13
+            requestCode = ActivityWithWriteSettingKtAllAnnotations::writeSettingWithPermissionCheck.packageLevelGetPropertyValueByName("REQUEST_WRITESETTING") as Int
         }
     }
 
@@ -43,9 +39,7 @@ class ActivityWithWriteSettingKtAllAnnotationsTest {
     fun setUp() {
         activity = Mockito.mock(ActivityWithWriteSettingKtAllAnnotations::class.java)
         PowerMockito.mockStatic(ActivityCompat::class.java)
-        PowerMockito.mockStatic(PermissionChecker::class.java)
-        PowerMockito.mockStatic(Process::class.java)
-        PowerMockito.mockStatic(AppOpsManagerCompat::class.java)
+        PowerMockito.mockStatic(ContextCompat::class.java)
         PowerMockito.mockStatic(Settings.System::class.java)
         PowerMockito.mockStatic(Uri::class.java)
 
@@ -55,7 +49,6 @@ class ActivityWithWriteSettingKtAllAnnotationsTest {
 
     @After
     fun tearDown() {
-        clearCustomManufacture()
         clearCustomSdkInt()
     }
 
@@ -139,17 +132,6 @@ class ActivityWithWriteSettingKtAllAnnotationsTest {
     }
 
     @Test
-    fun `call showNeverAsk method if permission not granted and shouldShowRequestPermissionRationale false`() {
-        mockCheckSelfPermission(false)
-        mockCanWrite(false)
-        mockShouldShowRequestPermissionRationaleActivity(false)
-
-        activity.onActivityResult(requestCode)
-
-        Mockito.verify(activity, Mockito.times(1)).showNeverAskForWriteSettings()
-    }
-
-    @Test
     fun `call showDenied method if permission not granted and shouldShowRequestPermissionRationale true`() {
         mockCheckSelfPermission(false)
         mockCanWrite(false)
@@ -159,5 +141,4 @@ class ActivityWithWriteSettingKtAllAnnotationsTest {
 
         Mockito.verify(activity, Mockito.times(1)).showDeniedForWriteSettings()
     }
-
 }

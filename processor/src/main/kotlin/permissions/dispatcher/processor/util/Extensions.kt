@@ -1,6 +1,7 @@
 package permissions.dispatcher.processor.util
 
 import com.squareup.kotlinpoet.*
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import permissions.dispatcher.NeedsPermission
 import permissions.dispatcher.OnNeverAskAgain
 import permissions.dispatcher.OnPermissionDenied
@@ -54,6 +55,7 @@ fun <A : Annotation> Element.hasAnnotation(annotationType: Class<A>): Boolean =
  */
 fun VariableElement.isNullable(): Boolean =
         this.annotationMirrors
+                .asSequence()
                 .map { it.annotationType.simpleString() }
                 .toList()
                 .contains("Nullable")
@@ -65,7 +67,7 @@ fun VariableElement.isNullable(): Boolean =
 fun VariableElement.asPreparedType(): TypeName =
         this.asType()
                 .asTypeName()
-                .checkStringType()
+                .correctJavaTypeToKotlinType()
                 .mapToNullableTypeIf(this.isNullable())
 
 /**
@@ -88,8 +90,10 @@ fun Annotation.permissionValue(): List<String> {
  */
 fun <A : Annotation> Element.childElementsAnnotatedWith(annotationClass: Class<A>): List<ExecutableElement> =
         this.enclosedElements
+                .asSequence()
                 .filter { it.hasAnnotation(annotationClass) }
                 .map { it as ExecutableElement }
+                .toList()
 
 /**
  * Returns whether or not a TypeMirror is a subtype of the provided other TypeMirror.
@@ -112,14 +116,30 @@ fun FileSpec.Builder.addTypes(types: List<TypeSpec>): FileSpec.Builder {
 }
 
 /**
- * To avoid KotlinPoet bug that returns java.lang.String when type name is kotlin.String.
- * This method should be removed after addressing on KotlinPoet side.
+ * To avoid KotlinPoet bugs return java.lang.class when type name is in kotlin package.
+ * TODO: Remove this method after being addressed on KotlinPoet side.
  */
-fun TypeName.checkStringType() =
-        if (this.toString() == "java.lang.String") ClassName("kotlin", "String") else this
+fun TypeName.correctJavaTypeToKotlinType(): TypeName {
+    return if (this is ParameterizedTypeName) {
+        val typeArguments = this.typeArguments.map { it.correctJavaTypeToKotlinType() }.toTypedArray()
+        val rawType = ClassName.bestGuess(this.rawType.correctJavaTypeToKotlinType().toString())
+        return rawType.parameterizedBy(*typeArguments)
+    } else when (toString()) {
+        "java.lang.Byte" -> ClassName("kotlin", "Byte")
+        "java.lang.Double" -> ClassName("kotlin", "Double")
+        "java.lang.Object" -> ClassName("kotlin", "Any")
+        "java.lang.String" -> ClassName("kotlin", "String")
+        "java.util.Set" -> ClassName("kotlin.collections", "MutableSet")
+        "java.util.List" -> ClassName("kotlin.collections", "MutableList")
+        // https://github.com/permissions-dispatcher/PermissionsDispatcher/issues/599
+        // https://github.com/permissions-dispatcher/PermissionsDispatcher/issues/619
+        "kotlin.ByteArray", "kotlin.collections.List", "kotlin.collections.Set",
+        "kotlin.collections.MutableList", "kotlin.collections.MutableSet" -> this
+        else -> this
+    }
+}
 
 /**
  * Returns this TypeName as nullable or non-nullable based on the given condition.
  */
-fun TypeName.mapToNullableTypeIf(nullable: Boolean) =
-        if (nullable) asNullable() else asNonNullable()
+fun TypeName.mapToNullableTypeIf(nullable: Boolean) = copy(nullable = nullable)

@@ -1,10 +1,8 @@
 package permissions.dispatcher.test
 
 import android.content.pm.PackageManager
-import android.os.Process
-import android.support.v4.app.ActivityCompat
-import android.support.v4.app.AppOpsManagerCompat
-import android.support.v4.content.PermissionChecker
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import org.junit.After
 import org.junit.Before
 import org.junit.BeforeClass
@@ -19,20 +17,19 @@ import permissions.dispatcher.PermissionRequest
 
 @Suppress("IllegalIdentifier")
 @RunWith(PowerMockRunner::class)
-@PrepareForTest(ActivityCompat::class, PermissionChecker::class, AppOpsManagerCompat::class, Process::class)
+@PrepareForTest(ActivityCompat::class, ContextCompat::class)
 class ActivityWithAllAnnotationsKtPermissionsDispatcherTest {
 
     private lateinit var activity: ActivityWithAllAnnotationsKt
 
     companion object {
         private var requestCode = 0
-        lateinit private var requestPermissions: Array<String>
+        private lateinit var requestPermissions: Array<String>
 
         @BeforeClass
         @JvmStatic
         fun setUpForClass() {
-            // TODO Reflection on Kotlin top-level properties?
-            requestCode = 2
+            requestCode = ActivityWithAllAnnotationsKt::showCameraWithPermissionCheck.packageLevelGetPropertyValueByName("REQUEST_SHOWCAMERA") as Int
             requestPermissions = arrayOf("android.permission.CAMERA")
         }
     }
@@ -41,14 +38,11 @@ class ActivityWithAllAnnotationsKtPermissionsDispatcherTest {
     fun setUp() {
         activity = Mockito.mock(ActivityWithAllAnnotationsKt::class.java)
         PowerMockito.mockStatic(ActivityCompat::class.java)
-        PowerMockito.mockStatic(PermissionChecker::class.java)
-        PowerMockito.mockStatic(Process::class.java)
-        PowerMockito.mockStatic(AppOpsManagerCompat::class.java)
+        PowerMockito.mockStatic(ContextCompat::class.java)
     }
 
     @After
     fun tearDown() {
-        clearCustomManufacture()
         clearCustomSdkInt()
     }
 
@@ -142,52 +136,6 @@ class ActivityWithAllAnnotationsKtPermissionsDispatcherTest {
         activity.onRequestPermissionsResult(requestCode + 1000, intArrayOf())
 
         Mockito.verify(activity, Mockito.times(0)).showNeverAskForCamera()
-    }
-
-    @Test
-    fun `xiaomi device permissionToOp returns null grant permission`() {
-        testForXiaomi()
-        mockPermissionToOp(null)
-
-        activity.showCameraWithPermissionCheck()
-
-        Mockito.verify(activity, Mockito.times(1)).showCamera()
-    }
-
-    @Test
-    fun `xiaomi device grant permission`() {
-        testForXiaomi()
-        mockPermissionToOp("")
-        mockNoteOp(AppOpsManagerCompat.MODE_ALLOWED)
-        mockCheckSelfPermission(true)
-
-        activity.showCameraWithPermissionCheck()
-
-        Mockito.verify(activity, Mockito.times(1)).showCamera()
-    }
-
-    @Test
-    fun `xiaomi noteOp returns not allowed value should not call the method`() {
-        testForXiaomi()
-        mockPermissionToOp("")
-        mockNoteOp(AppOpsManagerCompat.MODE_IGNORED)
-        mockCheckSelfPermission(true)
-
-        activity.showCameraWithPermissionCheck()
-
-        Mockito.verify(activity, Mockito.times(0)).showCamera()
-    }
-
-    @Test
-    fun `xiaomi noteOp returns allowed but checkSelfPermission not allowed value should not call the method`() {
-        testForXiaomi()
-        mockPermissionToOp("")
-        mockNoteOp(AppOpsManagerCompat.MODE_ALLOWED)
-        mockCheckSelfPermission(false)
-
-        activity.showCameraWithPermissionCheck()
-
-        Mockito.verify(activity, Mockito.times(0)).showCamera()
     }
 
     @Test

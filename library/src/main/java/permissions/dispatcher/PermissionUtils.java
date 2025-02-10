@@ -1,32 +1,36 @@
 package permissions.dispatcher;
 
 import android.app.Activity;
-import android.app.Fragment;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Build;
-import android.os.Process;
-import android.support.v13.app.FragmentCompat;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.AppOpsManagerCompat;
-import android.support.v4.content.PermissionChecker;
-import android.support.v4.util.SimpleArrayMap;
+
+import androidx.collection.SimpleArrayMap;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.fragment.app.Fragment;
 
 public final class PermissionUtils {
     // Map of dangerous permissions introduced in later framework versions.
     // Used to conditionally bypass permission-hold checks on older devices.
+    // ref: https://developer.android.com/reference/android/Manifest.permission
     private static final SimpleArrayMap<String, Integer> MIN_SDK_PERMISSIONS;
 
     static {
-        MIN_SDK_PERMISSIONS = new SimpleArrayMap<String, Integer>(8);
+        MIN_SDK_PERMISSIONS = new SimpleArrayMap<String, Integer>(13);
         MIN_SDK_PERMISSIONS.put("com.android.voicemail.permission.ADD_VOICEMAIL", 14);
-        MIN_SDK_PERMISSIONS.put("android.permission.BODY_SENSORS", 20);
         MIN_SDK_PERMISSIONS.put("android.permission.READ_CALL_LOG", 16);
         MIN_SDK_PERMISSIONS.put("android.permission.READ_EXTERNAL_STORAGE", 16);
-        MIN_SDK_PERMISSIONS.put("android.permission.USE_SIP", 9);
         MIN_SDK_PERMISSIONS.put("android.permission.WRITE_CALL_LOG", 16);
+        MIN_SDK_PERMISSIONS.put("android.permission.BODY_SENSORS", 20);
         MIN_SDK_PERMISSIONS.put("android.permission.SYSTEM_ALERT_WINDOW", 23);
         MIN_SDK_PERMISSIONS.put("android.permission.WRITE_SETTINGS", 23);
+        MIN_SDK_PERMISSIONS.put("android.permission.READ_PHONE_NUMBERS", 26);
+        MIN_SDK_PERMISSIONS.put("android.permission.ANSWER_PHONE_CALLS", 26);
+        MIN_SDK_PERMISSIONS.put("android.permission.ACCEPT_HANDOVER", 28);
+        MIN_SDK_PERMISSIONS.put("android.permission.ACTIVITY_RECOGNITION", 29);
+        MIN_SDK_PERMISSIONS.put("android.permission.ACCESS_MEDIA_LOCATION", 29);
+        MIN_SDK_PERMISSIONS.put("android.permission.ACCESS_BACKGROUND_LOCATION", 29);
     }
 
     private PermissionUtils() {
@@ -88,28 +92,15 @@ public final class PermissionUtils {
      *
      * @param context    context
      * @param permission permission
-     * @return returns true if context has access to the given permission, false otherwise.
+     * @return true if context has access to the given permission, false otherwise.
      * @see #hasSelfPermissions(Context, String...)
      */
     private static boolean hasSelfPermission(Context context, String permission) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && "Xiaomi".equalsIgnoreCase(Build.MANUFACTURER)) {
-            return hasSelfPermissionForXiaomi(context, permission);
-        }
         try {
-            return PermissionChecker.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED;
+            return ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED;
         } catch (RuntimeException t) {
             return false;
         }
-    }
-
-    private static boolean hasSelfPermissionForXiaomi(Context context, String permission) {
-        String permissionToOp = AppOpsManagerCompat.permissionToOp(permission);
-        if (permissionToOp == null) {
-            // in case of normal permissions(e.g. INTERNET)
-            return true;
-        }
-        int noteOp = AppOpsManagerCompat.noteOp(context, permissionToOp, Process.myUid(), context.getPackageName());
-        return noteOp == AppOpsManagerCompat.MODE_ALLOWED && PermissionChecker.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED;
     }
 
     /**
@@ -135,41 +126,12 @@ public final class PermissionUtils {
      * @param permissions permission list
      * @return returns true if one of the permission is needed to show rationale.
      */
-    public static boolean shouldShowRequestPermissionRationale(android.support.v4.app.Fragment fragment, String... permissions) {
+    public static boolean shouldShowRequestPermissionRationale(Fragment fragment, String... permissions) {
         for (String permission : permissions) {
             if (fragment.shouldShowRequestPermissionRationale(permission)) {
                 return true;
             }
         }
         return false;
-    }
-
-    /**
-     * Checks given permissions are needed to show rationale.
-     *
-     * @param fragment    fragment
-     * @param permissions permission list
-     * @return returns true if one of the permission is needed to show rationale.
-     */
-    @Deprecated
-    public static boolean shouldShowRequestPermissionRationale(Fragment fragment, String... permissions) {
-        for (String permission : permissions) {
-            if (FragmentCompat.shouldShowRequestPermissionRationale(fragment, permission)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Requests the provided permissions for a Fragment instance.
-     *
-     * @param fragment    fragment
-     * @param permissions permissions list
-     * @param requestCode Request code connected to the permission request
-     */
-    @Deprecated
-    public static void requestPermissions(Fragment fragment, String[] permissions, int requestCode) {
-        FragmentCompat.requestPermissions(fragment, permissions, requestCode);
     }
 }

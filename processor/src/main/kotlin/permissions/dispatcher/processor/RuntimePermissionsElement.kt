@@ -8,34 +8,22 @@ import permissions.dispatcher.NeedsPermission
 import permissions.dispatcher.OnNeverAskAgain
 import permissions.dispatcher.OnPermissionDenied
 import permissions.dispatcher.OnShowRationale
-import permissions.dispatcher.processor.util.GEN_CLASS_SUFFIX
-import permissions.dispatcher.processor.util.checkDuplicatedMethodName
-import permissions.dispatcher.processor.util.checkDuplicatedValue
-import permissions.dispatcher.processor.util.checkMethodParameters
-import permissions.dispatcher.processor.util.checkMethodSignature
-import permissions.dispatcher.processor.util.checkMixPermissionType
-import permissions.dispatcher.processor.util.checkNotEmpty
-import permissions.dispatcher.processor.util.checkPrivateMethods
-import permissions.dispatcher.processor.util.childElementsAnnotatedWith
-import permissions.dispatcher.processor.util.findMatchingMethodForNeeds
-import permissions.dispatcher.processor.util.packageName
-import permissions.dispatcher.processor.util.simpleString
-import permissions.dispatcher.processor.util.typeMirrorOf
+import permissions.dispatcher.processor.util.*
 import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.TypeElement
 
-class RuntimePermissionsElement(e: TypeElement) {
-    val typeName: TypeName = TypeName.get(e.asType())
-    val ktTypeName = e.asType().asTypeName()
-    val typeVariables = e.typeParameters.map { TypeVariableName.get(it) }
-    val ktTypeVariables = e.typeParameters.map { it.asTypeVariableName() }
-    val packageName = e.packageName()
-    val inputClassName = e.simpleString()
+class RuntimePermissionsElement(val element: TypeElement) {
+    val typeName: TypeName = TypeName.get(element.asType())
+    val ktTypeName = element.asType().asTypeName()
+    val typeVariables = element.typeParameters.map { TypeVariableName.get(it) }
+    val ktTypeVariables = element.typeParameters.map { it.asTypeVariableName() }
+    val packageName = element.packageName()
+    val inputClassName = element.simpleString()
     val generatedClassName = inputClassName + GEN_CLASS_SUFFIX
-    val needsElements = e.childElementsAnnotatedWith(NeedsPermission::class.java)
-    val onRationaleElements = e.childElementsAnnotatedWith(OnShowRationale::class.java)
-    val onDeniedElements = e.childElementsAnnotatedWith(OnPermissionDenied::class.java)
-    val onNeverAskElements = e.childElementsAnnotatedWith(OnNeverAskAgain::class.java)
+    val needsElements = element.childElementsAnnotatedWith(NeedsPermission::class.java)
+    private val onRationaleElements = element.childElementsAnnotatedWith(OnShowRationale::class.java)
+    private val onDeniedElements = element.childElementsAnnotatedWith(OnPermissionDenied::class.java)
+    private val onNeverAskElements = element.childElementsAnnotatedWith(OnNeverAskAgain::class.java)
 
     init {
         validateNeedsMethods()
@@ -43,8 +31,6 @@ class RuntimePermissionsElement(e: TypeElement) {
         validateDeniedMethods()
         validateNeverAskMethods()
     }
-
-    /* Begin private */
 
     private fun validateNeedsMethods() {
         checkNotEmpty(needsElements, this, NeedsPermission::class.java)
@@ -73,9 +59,8 @@ class RuntimePermissionsElement(e: TypeElement) {
         checkPrivateMethods(onNeverAskElements, OnNeverAskAgain::class.java)
         checkMethodSignature(onNeverAskElements)
         checkMethodParameters(onNeverAskElements, 0)
+        checkSpecialPermissionsWithNeverAskAgain(onNeverAskElements)
     }
-
-    /* Begin public */
 
     fun findOnRationaleForNeeds(needsElement: ExecutableElement): ExecutableElement? {
         return findMatchingMethodForNeeds(needsElement, onRationaleElements, OnShowRationale::class.java)

@@ -4,7 +4,6 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.Build;
-import android.support.v4.content.PermissionChecker;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -18,10 +17,14 @@ import org.powermock.modules.junit4.PowerMockRunner;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 
-import static android.os.Build.VERSION_CODES.GINGERBREAD;
+import androidx.core.content.PermissionChecker;
+
 import static android.os.Build.VERSION_CODES.ICE_CREAM_SANDWICH;
 import static android.os.Build.VERSION_CODES.JELLY_BEAN;
 import static android.os.Build.VERSION_CODES.KITKAT_WATCH;
+import static android.os.Build.VERSION_CODES.O;
+import static android.os.Build.VERSION_CODES.P;
+import static android.os.Build.VERSION_CODES.Q;
 import static junit.framework.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
@@ -102,17 +105,45 @@ public class ApiLevelTestSuite {
     }
 
     @Test
-    public void testUseSipPermission() throws Exception {
-        // USE_SIP:
-        // Added in API level 9 ("Gingerbread")
-        iteratePermissionCheck(Manifest.permission.USE_SIP, GINGERBREAD);
-    }
-
-    @Test
     public void testWriteCallLogPermission() throws Exception {
         // WRITE_CALL_LOG:
         // Added in API level 16 ("Jelly Bean")
         iteratePermissionCheck(Manifest.permission.WRITE_CALL_LOG, JELLY_BEAN);
+    }
+
+    @Test
+    public void testBodySensors() throws Exception {
+        iteratePermissionCheck(Manifest.permission.BODY_SENSORS, KITKAT_WATCH);
+    }
+
+    @Test
+    public void testReadPhoneNumbers() throws Exception {
+        iteratePermissionCheck(Manifest.permission.READ_PHONE_NUMBERS, O);
+    }
+
+    @Test
+    public void testAnswerPhoneNumbers() throws Exception {
+        iteratePermissionCheck(Manifest.permission.ANSWER_PHONE_CALLS, O);
+    }
+
+    @Test
+    public void testAcceptHandOver() throws Exception {
+        iteratePermissionCheck(Manifest.permission.ACCEPT_HANDOVER, P);
+    }
+
+    @Test
+    public void testActivityRecognition() throws Exception {
+        iteratePermissionCheck(Manifest.permission.ACTIVITY_RECOGNITION, Q);
+    }
+
+    @Test
+    public void testAccessMediaLocation() throws Exception {
+        iteratePermissionCheck(Manifest.permission.ACCESS_MEDIA_LOCATION, Q);
+    }
+
+    @Test
+    public void testAccessBackgroundLocation() throws Exception {
+        iteratePermissionCheck(Manifest.permission.ACCESS_BACKGROUND_LOCATION, Q);
     }
 
     /* Begin private */

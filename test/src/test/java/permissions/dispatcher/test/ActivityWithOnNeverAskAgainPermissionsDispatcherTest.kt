@@ -1,10 +1,8 @@
 package permissions.dispatcher.test
 
 import android.content.pm.PackageManager
-import android.os.Process
-import android.support.v4.app.ActivityCompat
-import android.support.v4.app.AppOpsManagerCompat
-import android.support.v4.content.PermissionChecker
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import org.junit.After
 import org.junit.Before
 import org.junit.BeforeClass
@@ -17,7 +15,7 @@ import org.powermock.modules.junit4.PowerMockRunner
 
 @Suppress("IllegalIdentifier")
 @RunWith(PowerMockRunner::class)
-@PrepareForTest(ActivityCompat::class, PermissionChecker::class, AppOpsManagerCompat::class, Process::class)
+@PrepareForTest(ActivityCompat::class, ContextCompat::class)
 class ActivityWithOnNeverAskAgainPermissionsDispatcherTest {
     private lateinit var activity: ActivityWithOnNeverAskAgain
 
@@ -35,14 +33,11 @@ class ActivityWithOnNeverAskAgainPermissionsDispatcherTest {
     fun setUp() {
         activity = Mockito.mock(ActivityWithOnNeverAskAgain::class.java)
         PowerMockito.mockStatic(ActivityCompat::class.java)
-        PowerMockito.mockStatic(PermissionChecker::class.java)
-        PowerMockito.mockStatic(Process::class.java)
-        PowerMockito.mockStatic(AppOpsManagerCompat::class.java)
+        PowerMockito.mockStatic(ContextCompat::class.java)
     }
 
     @After
     fun tearDown() {
-        clearCustomManufacture()
         clearCustomSdkInt()
     }
 
@@ -100,52 +95,6 @@ class ActivityWithOnNeverAskAgainPermissionsDispatcherTest {
         ActivityWithOnNeverAskAgainPermissionsDispatcher.onRequestPermissionsResult(activity, requestCode + 1000, null)
 
         Mockito.verify(activity, Mockito.times(0)).showNeverAskForCamera()
-    }
-
-    @Test
-    fun `xiaomi device permissionToOp returns null grant permission`() {
-        testForXiaomi()
-        mockPermissionToOp(null)
-
-        ActivityWithOnNeverAskAgainPermissionsDispatcher.showCameraWithPermissionCheck(activity)
-
-        Mockito.verify(activity, Mockito.times(1)).showCamera()
-    }
-
-    @Test
-    fun `xiaomi device grant permission`() {
-        testForXiaomi()
-        mockPermissionToOp("")
-        mockNoteOp(AppOpsManagerCompat.MODE_ALLOWED)
-        mockCheckSelfPermission(true)
-
-        ActivityWithOnNeverAskAgainPermissionsDispatcher.showCameraWithPermissionCheck(activity)
-
-        Mockito.verify(activity, Mockito.times(1)).showCamera()
-    }
-
-    @Test
-    fun `xiaomi noteOp returns not allowed value should not call the method`() {
-        testForXiaomi()
-        mockPermissionToOp("")
-        mockNoteOp(AppOpsManagerCompat.MODE_IGNORED)
-        mockCheckSelfPermission(true)
-
-        ActivityWithOnNeverAskAgainPermissionsDispatcher.showCameraWithPermissionCheck(activity)
-
-        Mockito.verify(activity, Mockito.times(0)).showCamera()
-    }
-
-    @Test
-    fun `xiaomi noteOp returns allowed but checkSelfPermission not allowed value should not call the method`() {
-        testForXiaomi()
-        mockPermissionToOp("")
-        mockNoteOp(AppOpsManagerCompat.MODE_ALLOWED)
-        mockCheckSelfPermission(false)
-
-        ActivityWithOnNeverAskAgainPermissionsDispatcher.showCameraWithPermissionCheck(activity)
-
-        Mockito.verify(activity, Mockito.times(0)).showCamera()
     }
 
     @Test

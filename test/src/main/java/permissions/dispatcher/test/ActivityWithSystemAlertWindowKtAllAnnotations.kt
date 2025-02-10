@@ -2,14 +2,8 @@ package permissions.dispatcher.test
 
 import android.Manifest
 import android.content.Intent
-import android.support.v7.app.AppCompatActivity
-
-import permissions.dispatcher.NeedsPermission
-import permissions.dispatcher.OnNeverAskAgain
-import permissions.dispatcher.OnPermissionDenied
-import permissions.dispatcher.OnShowRationale
-import permissions.dispatcher.PermissionRequest
-import permissions.dispatcher.RuntimePermissions
+import androidx.appcompat.app.AppCompatActivity
+import permissions.dispatcher.*
 
 @RuntimePermissions
 open class ActivityWithSystemAlertWindowKtAllAnnotations : AppCompatActivity() {
@@ -26,11 +20,7 @@ open class ActivityWithSystemAlertWindowKtAllAnnotations : AppCompatActivity() {
     internal fun showDeniedForSystemAlertWindow() {
     }
 
-    @OnNeverAskAgain(Manifest.permission.SYSTEM_ALERT_WINDOW)
-    internal fun showNeverAskForSystemAlertWindow() {
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent) {
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         onActivityResult(requestCode)
     }

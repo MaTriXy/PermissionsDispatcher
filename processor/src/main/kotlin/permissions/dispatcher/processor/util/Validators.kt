@@ -1,18 +1,10 @@
 package permissions.dispatcher.processor.util
 
+import permissions.dispatcher.OnNeverAskAgain
 import permissions.dispatcher.processor.ProcessorUnit
 import permissions.dispatcher.processor.RuntimePermissionsElement
 import permissions.dispatcher.processor.TYPE_UTILS
-import permissions.dispatcher.processor.exception.DuplicatedMethodNameException
-import permissions.dispatcher.processor.exception.DuplicatedValueException
-import permissions.dispatcher.processor.exception.MixPermissionTypeException
-import permissions.dispatcher.processor.exception.NoAnnotatedMethodsException
-import permissions.dispatcher.processor.exception.NoParametersAllowedException
-import permissions.dispatcher.processor.exception.NoThrowsAllowedException
-import permissions.dispatcher.processor.exception.PrivateMethodException
-import permissions.dispatcher.processor.exception.WrongClassException
-import permissions.dispatcher.processor.exception.WrongParametersException
-import permissions.dispatcher.processor.exception.WrongReturnTypeException
+import permissions.dispatcher.processor.exception.*
 import java.util.*
 import javax.lang.model.element.Element
 import javax.lang.model.element.ExecutableElement
@@ -20,14 +12,14 @@ import javax.lang.model.element.Modifier
 import javax.lang.model.type.TypeKind
 import javax.lang.model.type.TypeMirror
 
-private val WRITE_SETTINGS = "android.permission.WRITE_SETTINGS"
-private val SYSTEM_ALERT_WINDOW = "android.permission.SYSTEM_ALERT_WINDOW"
+private const val WRITE_SETTINGS = "android.permission.WRITE_SETTINGS"
+private const val SYSTEM_ALERT_WINDOW = "android.permission.SYSTEM_ALERT_WINDOW"
 
 /**
  * Obtains the [ProcessorUnit] implementation for the provided element.
  * Raises an exception if no suitable implementation exists
  */
-fun <K> findAndValidateProcessorUnit(units: List<ProcessorUnit<K>>, element: Element) : ProcessorUnit<K> {
+fun <K> findAndValidateProcessorUnit(units: List<ProcessorUnit<K>>, element: Element): ProcessorUnit<K> {
     val type = element.asType()
     try {
         return units.first { type.isSubtypeOf(it.getTargetType()) }
@@ -42,16 +34,14 @@ fun <K> findAndValidateProcessorUnit(units: List<ProcessorUnit<K>>, element: Ele
  * Raises an exception if any annotation value is found multiple times.
  */
 fun <A : Annotation> checkDuplicatedValue(items: List<ExecutableElement>, annotationClass: Class<A>) {
-    val allItems: ArrayList<List<String>> = arrayListOf()
+    val allItems: HashSet<List<String>> = hashSetOf()
     items.forEach {
-        val permissionValue = it.getAnnotation(annotationClass).permissionValue()
-        Collections.sort(permissionValue)
-        allItems.forEach { oldItem ->
-            if (oldItem == permissionValue) {
-                throw DuplicatedValueException(permissionValue, it, annotationClass)
-            }
+        val permissionValue = it.getAnnotation(annotationClass).permissionValue().sorted()
+        if (allItems.contains(permissionValue)) {
+            throw DuplicatedValueException(permissionValue, it, annotationClass)
+        } else {
+            allItems.add(permissionValue)
         }
-        allItems.add(permissionValue)
     }
 }
 
@@ -98,22 +88,22 @@ fun checkMethodSignature(items: List<ExecutableElement>) {
     }
 }
 
-fun checkMethodParameters(items: List<ExecutableElement>, numParams: Int, vararg requiredTypes: TypeMirror) {
+fun checkMethodParameters(items: List<ExecutableElement>, numParams: Int, requiredType: TypeMirror? = null) {
     items.forEach {
-        // Check each element's parameters against the requirements
         val params = it.parameters
         if (numParams == 0 && params.isNotEmpty()) {
             throw NoParametersAllowedException(it)
         }
-
-        if (numParams != params.size) {
-            throw WrongParametersException(it, requiredTypes)
+        if (requiredType == null) {
+            return
         }
-
-        params.forEachIndexed { i, param ->
-            val requiredType = requiredTypes[i]
+        if (numParams < params.size) {
+            throw WrongParametersException(it, numParams, requiredType)
+        }
+        // maximum params size is 1
+        params.forEach { param ->
             if (!TYPE_UTILS.isSameType(param.asType(), requiredType)) {
-                throw WrongParametersException(it, requiredTypes)
+                throw WrongParametersException(it, numParams, requiredType)
             }
         }
     }
@@ -128,6 +118,15 @@ fun <A : Annotation> checkMixPermissionType(items: List<ExecutableElement>, anno
             } else if (permissionValue.contains(SYSTEM_ALERT_WINDOW)) {
                 throw MixPermissionTypeException(it, SYSTEM_ALERT_WINDOW)
             }
+        }
+    }
+}
+
+fun checkSpecialPermissionsWithNeverAskAgain(items: List<ExecutableElement>, annotationClass: Class<OnNeverAskAgain> = OnNeverAskAgain::class.java) {
+    items.forEach {
+        val permissionValue = it.getAnnotation(annotationClass).permissionValue()
+        if (permissionValue.contains(WRITE_SETTINGS) || permissionValue.contains(SYSTEM_ALERT_WINDOW)) {
+            throw SpecialPermissionsWithNeverAskAgainException()
         }
     }
 }

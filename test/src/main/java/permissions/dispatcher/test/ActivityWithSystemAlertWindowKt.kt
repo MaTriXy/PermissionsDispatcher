@@ -2,7 +2,7 @@ package permissions.dispatcher.test
 
 import android.Manifest
 import android.content.Intent
-import android.support.v7.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatActivity
 
 import permissions.dispatcher.NeedsPermission
 import permissions.dispatcher.RuntimePermissions
@@ -14,7 +14,7 @@ open class ActivityWithSystemAlertWindowKt : AppCompatActivity() {
     internal fun systemAlertWindow() {
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent) {
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         onActivityResult(requestCode)
     }

@@ -1,7 +1,55 @@
 # Migration guide
 
+- [Migrating to Maven Central](#migrating-to-maven-central)
+- [Migrating to 4.x](#migrating-to-4x)
 - [Migrating to 3.x](#migrating-to-3x)
 - [Migrating to 2.x](#migrating-to-2x)
+
+## Migrating to Maven Central
+
+Since Maven Central only accepts valid URL, we had no other choices but to change groupId again.
+
+```diff
+dependencies {
+-  implementation "org.permissionsdispatcher:permissionsdispatcher:${latest.version}"
++  implementation "com.github.permissions-dispatcher:permissionsdispatcher:${latest.version}"
+-  annotationProcessor "org.permissionsdispatcher:permissionsdispatcher-processor:${latest.version}"
++  annotationProcessor "com.github.permissions-dispatcher:permissionsdispatcher-processor:${latest.version}"
+}
+```
+
+#### KTX
+
+NOTE: Due to accidental mistake, artifact id `permissionsdispatcher-ktx` also exists on maven central but `ktx` is the correct one.
+
+```diff
+dependencies {
+-  implementation "org.permissionsdispatcher:permissionsdispatcher-ktx:${latest.version}"
++  implementation "com.github.permissions-dispatcher:ktx:${latest.version}"
+}
+```
+
+## Migrating to 4.x
+
+### Change Maven groupId 
+
+Issue: [#560](https://github.com/permissions-dispatcher/PermissionsDispatcher/issues/560)
+
+```diff
+dependencies {
+-  implementation "com.github.hotchemi:permissionsdispatcher:${latest.version}"
++  implementation "org.permissionsdispatcher:permissionsdispatcher:${latest.version}"
+-  annotationProcessor "com.github.hotchemi:permissionsdispatcher-processor:${latest.version}"
++  annotationProcessor "org.permissionsdispatcher:permissionsdispatcher-processor:${latest.version}"
+}
+```
+
+### Migrate to AndroidX from AppCompat
+
+Issue: [#488](https://github.com/permissions-dispatcher/PermissionsDispatcher/pull/488)
+
+From 4.x we only support [Jetpack](https://developer.android.com/jetpack/).
+Be sure you've gotten AndroidX migration done before upgrading the library version to 4.x.
 
 ## Migrating to 3.x
 
